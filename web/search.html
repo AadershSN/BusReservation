@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Buses - BusGo</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-container">
+            <div class="brand-group">
+                <a href="/" class="brand-logo">&#128652; BusGo</a>
+                <span class="brand-tagline">College Bus Reservation System</span>
+            </div>
+            <nav class="site-nav">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/search" class="nav-link active">Search Buses</a>
+                <a href="/view-ticket" class="nav-link">View Ticket</a>
+                <a href="/cancel-ticket" class="nav-link">Cancel Ticket</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content container">
+        <section class="page-title-section">
+            <h1>Search Bus Routes</h1>
+            <p>Find available departures by entering your departure and destination cities.</p>
+        </section>
+
+        <section class="search-panel-card">
+            <form action="/search" method="GET" class="search-form">
+                <div class="form-group">
+                    <label for="source">Source City</label>
+                    <input type="text" id="source" name="source" value="{{SEARCH_SOURCE}}" placeholder="e.g. Kannur" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="destination">Destination City</label>
+                    <input type="text" id="destination" name="destination" value="{{SEARCH_DESTINATION}}" placeholder="e.g. Kochi" autocomplete="off">
+                </div>
+                <div class="form-group form-action">
+                    <label>&nbsp;</label>
+                    <button type="submit" class="btn btn-primary btn-search">&#128269; Filter Buses</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="search-results-section">
+            <div class="section-header">
+                <h2>Search Results</h2>
+            </div>
+
+            <!-- Dynamic Search Results Injected by Java HttpServer -->
+            {{SEARCH_RESULTS}}
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-container">
+            <p>&copy; 2026 BusGo Reservation System. Developed with standard Java &amp; HTML/CSS.</p>
+            <p class="footer-sub">Zero Frameworks &bull; Built-in Java HttpServer &bull; In-Memory Data</p>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Confirmation - BusGo</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-container">
+            <div class="brand-group">
+                <a href="/" class="brand-logo">&#128652; BusGo</a>
+                <span class="brand-tagline">College Bus Reservation System</span>
+            </div>
+            <nav class="site-nav">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/search" class="nav-link">Search Buses</a>
+                <a href="/view-ticket" class="nav-link">View Ticket</a>
+                <a href="/cancel-ticket" class="nav-link">Cancel Ticket</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content container">
+        <div class="alert alert-success ticket-success-banner">
+            <h2>&#10004; Reservation Confirmed!</h2>
+            <p>Your seat has been reserved successfully. Below is your official e-ticket.</p>
+        </div>
+
+        <div class="ticket-card" id="ticketPrintArea">
+            <div class="ticket-header">
+                <div class="ticket-header-brand">
+                    <h2>BUSGO EXPRESS</h2>
+                    <span class="ticket-type">Official Boarding Pass</span>
+                </div>
+                <div class="ticket-status-stamp">
+                    <span class="stamp-confirmed">CONFIRMED</span>
+                </div>
+            </div>
+
+            <div class="ticket-body">
+                <div class="ticket-grid">
+                    <div class="ticket-cell">
+                        <span class="t-label">Ticket Number</span>
+                        <span class="t-val t-highlight">#{{TICKET_NUMBER}}</span>
+                    </div>
+                    <div class="ticket-cell">
+                        <span class="t-label">Booking Time</span>
+                        <span class="t-val">{{BOOKED_TIME}}</span>
+                    </div>
+                    <div class="ticket-cell">
+                        <span class="t-label">Bus Number</span>
+                        <span class="t-val">Bus #{{BUS_NUMBER}}</span>
+                    </div>
+                    <div class="ticket-cell">
+                        <span class="t-label">Route</span>
+                        <span class="t-val">{{ROUTE}}</span>
+                    </div>
+                    <div class="ticket-cell">
+                        <span class="t-label">Departure</span>
+                        <span class="t-val">&#128337; {{DEPARTURE}}</span>
+                    </div>
+                    <div class="ticket-cell">
+                        <span class="t-label">Passenger Name</span>
+                        <span class="t-val">{{PASSENGER_NAME}}</span>
+                    </div>
+                    <div class="ticket-cell">
+                        <span class="t-label">Passenger ID / Roll No</span>
+                        <span class="t-val">{{PASSENGER_ID}}</span>
+                    </div>
+                    <div class="ticket-cell">
+                        <span class="t-label">Contact Number</span>
+                        <span class="t-val">{{CONTACT}}</span>
+                    </div>
+                    <div class="ticket-cell">
+                        <span class="t-label">Assigned Seat</span>
+                        <span class="t-val seat-highlight">Seat {{SEAT_NUMBER}}</span>
+                    </div>
+                    <div class="ticket-cell">
+                        <span class="t-label">Seat Class</span>
+                        <span class="t-val">{{SEAT_CLASS}}</span>
+                    </div>
+                    <div class="ticket-cell">
+                        <span class="t-label">Total Fare Paid</span>
+                        <span class="t-val fare-highlight">Rs.{{FARE}}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ticket-actions no-print">
+                <button onclick="window.print()" class="btn btn-secondary btn-print">&#128438; Print Ticket</button>
+                <a href="/cancel-ticket?ticketNumber={{TICKET_NUMBER}}" class="btn btn-danger">&#10006; Cancel This Ticket</a>
+                <a href="/" class="btn btn-primary">&larr; Book Another Journey</a>
+            </div>
+
+            <!-- College Project Viva Verification Block -->
+            <div class="ascii-ticket-container">
+                <h4>System Verification Receipt (Console Format)</h4>
+                <pre class="ascii-box">{{RAW_TICKET_TEXT}}</pre>
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-container">
+            <p>&copy; 2026 BusGo Reservation System. Developed with standard Java &amp; HTML/CSS.</p>
+            <p class="footer-sub">Zero Frameworks &bull; Built-in Java HttpServer &bull; In-Memory Data</p>
+        </div>
+    </footer>
+</body>
+</html>

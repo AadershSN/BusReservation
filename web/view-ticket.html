@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Ticket - BusGo</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-container">
+            <div class="brand-group">
+                <a href="/" class="brand-logo">&#128652; BusGo</a>
+                <span class="brand-tagline">College Bus Reservation System</span>
+            </div>
+            <nav class="site-nav">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/search" class="nav-link">Search Buses</a>
+                <a href="/view-ticket" class="nav-link active">View Ticket</a>
+                <a href="/cancel-ticket" class="nav-link">Cancel Ticket</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content container">
+        <section class="page-title-section">
+            <h1>Look Up Your Ticket</h1>
+            <p>Enter your 4-digit ticket number (e.g. 1001) to view the details of your confirmed booking.</p>
+        </section>
+
+        <section class="search-panel-card">
+            <form action="/view-ticket" method="GET" class="search-form lookup-form">
+                <div class="form-group flex-grow">
+                    <label for="ticketNumber">Ticket Number</label>
+                    <input type="number" id="ticketNumber" name="ticketNumber" value="{{TICKET_QUERY}}" placeholder="e.g. 1001" required min="1001" autocomplete="off" autofocus>
+                </div>
+                <div class="form-group form-action">
+                    <label>&nbsp;</label>
+                    <button type="submit" class="btn btn-primary btn-search">&#128269; View Ticket</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Status Message or Error (e.g. "Ticket not found.") -->
+        {{ALERT}}
+
+        <!-- Result Ticket Card Injected by Java Backend -->
+        {{TICKET_RESULT}}
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-container">
+            <p>&copy; 2026 BusGo Reservation System. Developed with standard Java &amp; HTML/CSS.</p>
+            <p class="footer-sub">Zero Frameworks &bull; Built-in Java HttpServer &bull; In-Memory Data</p>
+        </div>
+    </footer>
+</body>
+</html>

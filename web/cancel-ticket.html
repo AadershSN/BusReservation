@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cancel Ticket - BusGo</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-container">
+            <div class="brand-group">
+                <a href="/" class="brand-logo">&#128652; BusGo</a>
+                <span class="brand-tagline">College Bus Reservation System</span>
+            </div>
+            <nav class="site-nav">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/search" class="nav-link">Search Buses</a>
+                <a href="/view-ticket" class="nav-link">View Ticket</a>
+                <a href="/cancel-ticket" class="nav-link active">Cancel Ticket</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content container">
+        <section class="page-title-section">
+            <h1>Cancel Ticket Reservation</h1>
+            <p>Enter your ticket number to cancel your booking and automatically release your seat back to the fleet.</p>
+        </section>
+
+        <section class="search-panel-card danger-accent">
+            <form action="/cancel-ticket" method="POST" class="search-form lookup-form">
+                <div class="form-group flex-grow">
+                    <label for="ticketNumber">Ticket Number to Cancel</label>
+                    <input type="number" id="ticketNumber" name="ticketNumber" value="{{TICKET_QUERY}}" placeholder="e.g. 1001" required min="1001" autocomplete="off" autofocus>
+                </div>
+                <div class="form-group form-action">
+                    <label>&nbsp;</label>
+                    <button type="submit" class="btn btn-danger">&#10006; Cancel Ticket</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Status Message or Error (e.g. "Ticket not found.") -->
+        {{ALERT}}
+
+        <!-- Cancellation Receipt Injected by Java Backend -->
+        {{CANCELLATION_RESULT}}
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-container">
+            <p>&copy; 2026 BusGo Reservation System. Developed with standard Java &amp; HTML/CSS.</p>
+            <p class="footer-sub">Zero Frameworks &bull; Built-in Java HttpServer &bull; In-Memory Data</p>
+        </div>
+    </footer>
+</body>
+</html>
