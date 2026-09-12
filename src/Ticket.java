@@ -91,7 +91,7 @@ public class Ticket {
                "BUSGO TICKET\n" +
                "Ticket Number : " + ticketNumber + "\n" +
                "Passenger     : " + passenger.getPassengerName() + "\n" +
-               "Passenger ID  : " + passenger.getPassengerId() + "\n" +
+               "Govt ID Proof : " + passenger.getPassengerId() + "\n" +
                "Contact       : " + passenger.getContact() + "\n" +
                "Bus Number    : " + bus.getBusNumber() + "\n" +
                "Route         : " + bus.getSource() + " -> " + bus.getDestination() + "\n" +

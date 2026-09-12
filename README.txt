@@ -1,6 +1,6 @@
 ================================================================================
 BUSGO - ONLINE BUS RESERVATION SYSTEM
-College-Level Java Project (Pure Java + Semantic HTML5 / CSS3)
+Full-Featured Pure Java Web Project (Pure Java + Semantic HTML5 / CSS3)
 ================================================================================
 
 1. PROJECT OVERVIEW
@@ -120,8 +120,8 @@ You should see the following console output:
 
 4. Passenger Booking:
    - Fill in:
-     * Name: Aadersh
-     * ID: CSE101
+     * Name: Rahul Sharma
+     * Govt ID: AADHAAR-4892
      * Contact: 9876543210
      * Seat Class: AC Class
    - Click "Confirm & Book Ticket".

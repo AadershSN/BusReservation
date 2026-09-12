@@ -11,7 +11,7 @@ public class Passenger {
      * Constructs a new Passenger.
      * 
      * @param passengerName Full name of the passenger
-     * @param passengerId Unique identification/student roll number
+     * @param passengerId Unique identification / Government ID proof number (e.g. Aadhaar / Voter ID / Passport)
      * @param contact Phone number or contact details
      */
     public Passenger(String passengerName, String passengerId, String contact) {

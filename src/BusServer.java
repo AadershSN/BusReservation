@@ -569,23 +569,23 @@ public class BusServer {
                "  </div>\n" +
                "  <div class=\"ticket-body\">\n" +
                "    <div class=\"ticket-row\">\n" +
-               "      <div class=\"field\"><label>Ticket Number</label><span>#" + ticket.getTicketNumber() + "</span></div>\n" +
-               "      <div class=\"field\"><label>Booked At</label><span>" + escapeHtml(ticket.getFormattedBookingTime()) + "</span></div>\n" +
+               "      <div class=\"field\"><label>Ticket Number: </label><span>#" + ticket.getTicketNumber() + "</span></div>\n" +
+               "      <div class=\"field\"><label>Booked At: </label><span>" + escapeHtml(ticket.getFormattedBookingTime()) + "</span></div>\n" +
                "    </div>\n" +
                "    <div class=\"ticket-row\">\n" +
-               "      <div class=\"field\"><label>Passenger Name</label><span>" + escapeHtml(passenger.getPassengerName()) + "</span></div>\n" +
-               "      <div class=\"field\"><label>Passenger ID</label><span>" + escapeHtml(passenger.getPassengerId()) + "</span></div>\n" +
-               "      <div class=\"field\"><label>Contact</label><span>" + escapeHtml(passenger.getContact()) + "</span></div>\n" +
+               "      <div class=\"field\"><label>Passenger Name: </label><span>" + escapeHtml(passenger.getPassengerName()) + "</span></div>\n" +
+               "      <div class=\"field\"><label>Govt ID Proof: </label><span>" + escapeHtml(passenger.getPassengerId()) + "</span></div>\n" +
+               "      <div class=\"field\"><label>Contact: </label><span>" + escapeHtml(passenger.getContact()) + "</span></div>\n" +
                "    </div>\n" +
                "    <div class=\"ticket-row highlight-row\">\n" +
-               "      <div class=\"field\"><label>Bus Number</label><span>#" + bus.getBusNumber() + "</span></div>\n" +
-               "      <div class=\"field\"><label>Route</label><span>" + escapeHtml(bus.getSource()) + " &rarr; " + escapeHtml(bus.getDestination()) + "</span></div>\n" +
-               "      <div class=\"field\"><label>Departure Time</label><span>" + escapeHtml(bus.getDepartureTime()) + "</span></div>\n" +
+               "      <div class=\"field\"><label>Bus Number: </label><span>#" + bus.getBusNumber() + "</span></div>\n" +
+               "      <div class=\"field\"><label>Route: </label><span>" + escapeHtml(bus.getSource()) + " &rarr; " + escapeHtml(bus.getDestination()) + "</span></div>\n" +
+               "      <div class=\"field\"><label>Departure Time: </label><span>" + escapeHtml(bus.getDepartureTime()) + "</span></div>\n" +
                "    </div>\n" +
                "    <div class=\"ticket-row\">\n" +
-               "      <div class=\"field\"><label>Seat Number</label><span class=\"seat-highlight\">" + String.format("%02d", ticket.getSeatNumber()) + "</span></div>\n" +
-               "      <div class=\"field\"><label>Class</label><span>" + escapeHtml(ticket.getSeatClass()) + "</span></div>\n" +
-               "      <div class=\"field\"><label>Total Fare</label><span class=\"fare-highlight\">Rs." + (int)ticket.getFare() + "</span></div>\n" +
+               "      <div class=\"field\"><label>Seat Number: </label><span class=\"seat-highlight\">" + String.format("%02d", ticket.getSeatNumber()) + "</span></div>\n" +
+               "      <div class=\"field\"><label>Class: </label><span>" + escapeHtml(ticket.getSeatClass()) + "</span></div>\n" +
+               "      <div class=\"field\"><label>Total Fare: </label><span class=\"fare-highlight\">Rs." + (int)ticket.getFare() + "</span></div>\n" +
                "    </div>\n" +
                "  </div>\n" +
                "  <div class=\"ticket-footer\">\n" +
