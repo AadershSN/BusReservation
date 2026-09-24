@@ -108,9 +108,12 @@ public class FleetManager {
             throw new IllegalStateException("Seat " + seatNumber + " on Bus #" + busNumber + " is already booked.");
         }
 
-        if (seatClass == null || (!seatClass.equalsIgnoreCase("AC") && !seatClass.equalsIgnoreCase("Non-AC"))) {
+        if (seatClass == null || seatClass.trim().isEmpty()) {
+            seatClass = bus.getSeatClass();
+        } else if (!seatClass.equalsIgnoreCase("AC") && !seatClass.equalsIgnoreCase("Non-AC")) {
             throw new IllegalArgumentException("Seat class must be either AC or Non-AC.");
         }
+        seatClass = seatClass.equalsIgnoreCase("AC") ? "AC" : "Non-AC";
 
         // Reserve the seat on the bus
         boolean reserved = bus.reserveSeat(seatNumber);

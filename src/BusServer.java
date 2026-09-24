@@ -163,6 +163,9 @@ public class BusServer {
 
             String html = readTemplate("seats.html");
             html = html.replace("{{BUS_NUMBER}}", String.valueOf(bus.getBusNumber()));
+            html = html.replace("{{BUS_TYPE}}", escapeHtml(bus.getBusType()));
+            html = html.replace("{{SEAT_CLASS}}", escapeHtml(bus.getSeatClass()));
+            html = html.replace("{{FARE}}", String.valueOf((int)bus.getFare()));
             html = html.replace("{{SOURCE}}", escapeHtml(bus.getSource()));
             html = html.replace("{{DESTINATION}}", escapeHtml(bus.getDestination()));
             html = html.replace("{{DEPARTURE}}", escapeHtml(bus.getDepartureTime()));
@@ -273,6 +276,10 @@ public class BusServer {
 
             String html = readTemplate("booking.html");
             html = html.replace("{{BUS_NUMBER}}", String.valueOf(bus.getBusNumber()));
+            html = html.replace("{{BUS_TYPE}}", escapeHtml(bus.getBusType()));
+            html = html.replace("{{SEAT_CLASS}}", escapeHtml(bus.getSeatClass()));
+            html = html.replace("{{SEAT_CLASS_LOWER}}", bus.getSeatClass().toLowerCase().replace("-", ""));
+            html = html.replace("{{FARE}}", String.valueOf((int)bus.getFare()));
             html = html.replace("{{SOURCE}}", escapeHtml(bus.getSource()));
             html = html.replace("{{DESTINATION}}", escapeHtml(bus.getDestination()));
             html = html.replace("{{DEPARTURE}}", escapeHtml(bus.getDepartureTime()));
@@ -308,7 +315,7 @@ public class BusServer {
             String contact = form.get("contact");
             String seatClass = form.get("seatClass");
 
-            if (busNumStr == null || seatNumStr == null || passengerName == null || passengerId == null || contact == null || seatClass == null ||
+            if (busNumStr == null || seatNumStr == null || passengerName == null || passengerId == null || contact == null ||
                 passengerName.trim().isEmpty() || passengerId.trim().isEmpty() || contact.trim().isEmpty()) {
                 sendErrorPage(exchange, 400, "Validation Error", "All fields are required. Please fill in all passenger details.");
                 return;
@@ -324,9 +331,16 @@ public class BusServer {
                 return;
             }
 
-            if (!seatClass.equalsIgnoreCase("AC") && !seatClass.equalsIgnoreCase("Non-AC")) {
-                sendErrorPage(exchange, 400, "Invalid Seat Class", "Seat class must be either AC or Non-AC.");
+            Bus bus = fleetManager.findBus(busNumber);
+            if (bus == null) {
+                sendErrorPage(exchange, 404, "Bus Not Found", "Bus #" + busNumber + " was not found.");
                 return;
+            }
+
+            if (seatClass == null || seatClass.trim().isEmpty()) {
+                seatClass = bus.getSeatClass();
+            } else {
+                seatClass = seatClass.trim();
             }
 
             Ticket ticket;
@@ -503,7 +517,14 @@ public class BusServer {
 
             sb.append("  <div class=\"bus-card\">\n");
             sb.append("    <div class=\"bus-card-header\">\n");
-            sb.append("      <span class=\"bus-badge\">Bus #").append(bus.getBusNumber()).append("</span>\n");
+            sb.append("      <div class=\"badge-group\">\n");
+            sb.append("        <span class=\"bus-badge\">Bus #").append(bus.getBusNumber()).append("</span>\n");
+            if (bus.isAc()) {
+                sb.append("        <span class=\"coach-badge coach-ac\">").append(escapeHtml(bus.getBusType())).append("</span>\n");
+            } else {
+                sb.append("        <span class=\"coach-badge coach-non-ac\">").append(escapeHtml(bus.getBusType())).append("</span>\n");
+            }
+            sb.append("      </div>\n");
             sb.append("      <span class=\"bus-time\">&#128337; ").append(escapeHtml(bus.getDepartureTime())).append("</span>\n");
             sb.append("    </div>\n");
             sb.append("    <div class=\"bus-route\">\n");
@@ -521,9 +542,9 @@ public class BusServer {
             }
             sb.append("      </div>\n");
             sb.append("      <div class=\"detail-item\">\n");
-            sb.append("        <span class=\"label\">Fares:</span>\n");
-            sb.append("        <span class=\"value fare-info\">AC: Rs.").append((int)bus.getAcFare())
-              .append(" | Non-AC: Rs.").append((int)bus.getNonAcFare()).append("</span>\n");
+            sb.append("        <span class=\"label\">Ticket Fare:</span>\n");
+            sb.append("        <span class=\"value fare-info\">Rs.").append((int)bus.getFare())
+              .append(" <small class=\"class-tag\">(").append(escapeHtml(bus.getSeatClass())).append(")</small></span>\n");
             sb.append("      </div>\n");
             sb.append("    </div>\n");
             sb.append("    <div class=\"bus-action\">\n");
@@ -549,6 +570,7 @@ public class BusServer {
         html = html.replace("{{PASSENGER_ID}}", escapeHtml(passenger.getPassengerId()));
         html = html.replace("{{CONTACT}}", escapeHtml(passenger.getContact()));
         html = html.replace("{{BUS_NUMBER}}", String.valueOf(bus.getBusNumber()));
+        html = html.replace("{{BUS_TYPE}}", escapeHtml(bus.getBusType()));
         html = html.replace("{{ROUTE}}", escapeHtml(bus.getSource() + " \u2192 " + bus.getDestination()));
         html = html.replace("{{DEPARTURE}}", escapeHtml(bus.getDepartureTime()));
         html = html.replace("{{SEAT_NUMBER}}", String.format("%02d", ticket.getSeatNumber()));
@@ -578,7 +600,7 @@ public class BusServer {
                "      <div class=\"field\"><label>Contact: </label><span>" + escapeHtml(passenger.getContact()) + "</span></div>\n" +
                "    </div>\n" +
                "    <div class=\"ticket-row highlight-row\">\n" +
-               "      <div class=\"field\"><label>Bus Number: </label><span>#" + bus.getBusNumber() + "</span></div>\n" +
+               "      <div class=\"field\"><label>Bus Number: </label><span>#" + bus.getBusNumber() + " (" + escapeHtml(bus.getBusType()) + ")</span></div>\n" +
                "      <div class=\"field\"><label>Route: </label><span>" + escapeHtml(bus.getSource()) + " &rarr; " + escapeHtml(bus.getDestination()) + "</span></div>\n" +
                "      <div class=\"field\"><label>Departure Time: </label><span>" + escapeHtml(bus.getDepartureTime()) + "</span></div>\n" +
                "    </div>\n" +

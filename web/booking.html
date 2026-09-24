@@ -45,18 +45,19 @@
                         <span class="summary-label">Selected Seat</span>
                         <span class="summary-value seat-badge">Seat {{SEAT_NUMBER}}</span>
                     </div>
-                    <hr class="divider">
-                    <div class="fare-table">
-                        <div class="fare-row">
-                            <span>AC Class:</span>
-                            <strong>Rs.{{AC_FARE}}</strong>
-                        </div>
-                        <div class="fare-row">
-                            <span>Non-AC Class:</span>
-                            <strong>Rs.{{NON_AC_FARE}}</strong>
-                        </div>
+                    <div class="summary-line">
+                        <span class="summary-label">Coach Type</span>
+                        <span class="summary-value">{{BUS_TYPE}}</span>
                     </div>
-                    <p class="fare-note">*Final fare is verified and calculated on the Java server upon booking submission.</p>
+                    <div class="summary-line">
+                        <span class="summary-label">Seat Class</span>
+                        <span class="summary-value coach-tag {{SEAT_CLASS_LOWER}}">{{SEAT_CLASS}}</span>
+                    </div>
+                    <hr class="divider">
+                    <div class="fare-total-box">
+                        <span class="fare-total-label">Total Ticket Fare</span>
+                        <span class="fare-total-amount">Rs.{{FARE}}</span>
+                    </div>
                 </div>
             </div>
 
@@ -88,11 +89,12 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="seatClass">Select Seat Class <span class="required">*</span></label>
-                            <select id="seatClass" name="seatClass" required class="select-input">
-                                <option value="AC" selected>AC Class &mdash; Rs.{{AC_FARE}}</option>
-                                <option value="Non-AC">Non-AC Class &mdash; Rs.{{NON_AC_FARE}}</option>
-                            </select>
+                            <label>Coach &amp; Seat Class</label>
+                            <div class="seat-class-display">
+                                <div class="class-title">&#128652; {{BUS_TYPE}} &mdash; <strong>{{SEAT_CLASS}} Class</strong></div>
+                                <div class="class-fare">Rs.{{FARE}}</div>
+                            </div>
+                            <input type="hidden" name="seatClass" value="{{SEAT_CLASS}}">
                         </div>
 
                         <div class="form-buttons">

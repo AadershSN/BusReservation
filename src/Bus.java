@@ -7,26 +7,30 @@ import java.util.Arrays;
  */
 public class Bus {
     private int busNumber;
+    private String busType;   // e.g. "AC Super Deluxe", "Express Non-AC"
+    private String seatClass; // "AC" or "Non-AC"
     private String source;
     private String destination;
     private String departureTime;
     private int totalSeats;
     private boolean[] seats; // false = available, true = booked
+    private double fare;     // Coach ticket fare
     private double acFare;
     private double nonAcFare;
 
     /**
-     * Constructs a Bus instance.
+     * Constructs a Bus instance with a fixed bus type and seat class (Approach 1).
      * 
      * @param busNumber Unique bus number
+     * @param busType Service name (e.g. "AC Super Deluxe", "Express Non-AC")
+     * @param seatClass Seat category ("AC" or "Non-AC")
      * @param source Departure city/station
      * @param destination Arrival city/station
      * @param departureTime Scheduled departure time
      * @param totalSeats Total number of seats (typically 20)
-     * @param acFare Ticket fare for AC class
-     * @param nonAcFare Ticket fare for Non-AC class
+     * @param fare Ticket fare for this coach
      */
-    public Bus(int busNumber, String source, String destination, String departureTime, int totalSeats, double acFare, double nonAcFare) {
+    public Bus(int busNumber, String busType, String seatClass, String source, String destination, String departureTime, int totalSeats, double fare) {
         if (busNumber <= 0) {
             throw new IllegalArgumentException("Bus number must be positive.");
         }
@@ -42,19 +46,50 @@ public class Bus {
         if (totalSeats <= 0) {
             throw new IllegalArgumentException("Total seats must be greater than 0.");
         }
+        if (fare < 0) {
+            throw new IllegalArgumentException("Fare cannot be negative.");
+        }
 
         this.busNumber = busNumber;
+        this.busType = (busType != null && !busType.trim().isEmpty()) ? busType.trim() : "Standard Express";
+        this.seatClass = (seatClass != null && seatClass.trim().equalsIgnoreCase("AC")) ? "AC" : "Non-AC";
         this.source = source.trim();
         this.destination = destination.trim();
         this.departureTime = departureTime.trim();
         this.totalSeats = totalSeats;
         this.seats = new boolean[totalSeats]; // Initially all false (available)
+        this.fare = fare;
+        this.acFare = this.seatClass.equals("AC") ? fare : fare * 1.5;
+        this.nonAcFare = this.seatClass.equals("Non-AC") ? fare : fare * 0.7;
+    }
+
+    /**
+     * Legacy constructor for backward compatibility.
+     */
+    public Bus(int busNumber, String source, String destination, String departureTime, int totalSeats, double acFare, double nonAcFare) {
+        this(busNumber, "Express AC Seater", "AC", source, destination, departureTime, totalSeats, acFare);
         this.acFare = acFare;
         this.nonAcFare = nonAcFare;
     }
 
     public int getBusNumber() {
         return busNumber;
+    }
+
+    public String getBusType() {
+        return busType;
+    }
+
+    public String getSeatClass() {
+        return seatClass;
+    }
+
+    public boolean isAc() {
+        return "AC".equalsIgnoreCase(seatClass);
+    }
+
+    public double getFare() {
+        return fare;
     }
 
     public String getSource() {
@@ -82,13 +117,16 @@ public class Bus {
     }
 
     /**
-     * Calculates fare based on the requested seat class.
+     * Calculates fare for this bus.
      * 
-     * @param seatClass "AC" or "Non-AC"
-     * @return Corresponding fare
+     * @param requestedClass Requested seat class (optional)
+     * @return The bus's fixed fare
      */
-    public double getFare(String seatClass) {
-        if (seatClass != null && seatClass.trim().equalsIgnoreCase("AC")) {
+    public double getFare(String requestedClass) {
+        if (fare > 0) {
+            return fare;
+        }
+        if (requestedClass != null && requestedClass.trim().equalsIgnoreCase("AC")) {
             return acFare;
         }
         return nonAcFare;

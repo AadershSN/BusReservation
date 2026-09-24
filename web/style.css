@@ -309,6 +309,13 @@ body {
     align-items: center;
 }
 
+.badge-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
 .bus-badge {
     background-color: #dbeafe;
     color: var(--primary);
@@ -316,6 +323,26 @@ body {
     padding: 4px 10px;
     border-radius: 6px;
     font-size: 0.85rem;
+}
+
+.coach-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.3px;
+}
+
+.coach-badge.coach-ac {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+.coach-badge.coach-non-ac {
+    background-color: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
 }
 
 .bus-time {
@@ -645,6 +672,80 @@ body {
     border: none;
     border-top: 1px solid var(--border-color);
     margin: 15px 0;
+}
+
+.fare-total-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ecfdf5;
+    padding: 12px 14px;
+    border-radius: var(--radius);
+    border: 1px solid #a7f3d0;
+}
+
+.fare-total-label {
+    font-weight: 600;
+    color: #065f46;
+    font-size: 0.9rem;
+}
+
+.fare-total-amount {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #047857;
+}
+
+.seat-class-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f1f5f9;
+    border: 1.5px solid #cbd5e1;
+    border-radius: var(--radius);
+    padding: 12px 16px;
+}
+
+.class-title {
+    font-weight: 600;
+    color: var(--text-main);
+    font-size: 0.95rem;
+}
+
+.class-fare {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--primary);
+}
+
+.coach-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.coach-tag.ac {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+}
+
+.coach-tag.nonac, .coach-tag.non-ac {
+    background-color: #fef3c7;
+    color: #b45309;
+}
+
+.class-tag {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: normal;
+}
+
+.highlight-fare {
+    color: var(--accent-green);
+    font-weight: 700;
 }
 
 .fare-table {

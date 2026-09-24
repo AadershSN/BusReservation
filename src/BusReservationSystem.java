@@ -7,15 +7,24 @@ public class BusReservationSystem {
     public static void main(String[] args) {
         FleetManager fleetManager = new FleetManager();
 
-        // Initialize sample buses as required:
-        // Bus 101: Kannur -> Kochi, 08:00 AM, 20 seats, AC Rs.800, Non-AC Rs.500
-        fleetManager.addBus(new Bus(101, "Kannur", "Kochi", "08:00 AM", 20, 800.0, 500.0));
+        // Initialize fleet with Approach 1 (Each bus is dedicated AC or Non-AC with realistic varied timings):
+        // Bus 101: Early morning AC Super Deluxe
+        fleetManager.addBus(new Bus(101, "AC Super Deluxe", "AC", "Kannur", "Kochi", "06:15 AM", 20, 750.0));
 
-        // Bus 102: Kannur -> Kozhikode, 10:30 AM, 20 seats, AC Rs.600, Non-AC Rs.350
-        fleetManager.addBus(new Bus(102, "Kannur", "Kozhikode", "10:30 AM", 20, 600.0, 350.0));
+        // Bus 102: Morning regional Non-AC Express
+        fleetManager.addBus(new Bus(102, "Express Non-AC", "Non-AC", "Kannur", "Kozhikode", "08:45 AM", 20, 280.0));
 
-        // Bus 103: Kochi -> Trivandrum, 09:00 AM, 20 seats, AC Rs.900, Non-AC Rs.600
-        fleetManager.addBus(new Bus(103, "Kochi", "Trivandrum", "09:00 AM", 20, 900.0, 600.0));
+        // Bus 103: Afternoon Volvo AC Multi-Axle
+        fleetManager.addBus(new Bus(103, "Volvo AC Multi-Axle", "AC", "Kochi", "Trivandrum", "01:30 PM", 20, 620.0));
+
+        // Bus 104: Evening commuter Non-AC Deluxe
+        fleetManager.addBus(new Bus(104, "Deluxe Non-AC", "Non-AC", "Kozhikode", "Kochi", "05:20 PM", 20, 380.0));
+
+        // Bus 105: Night long-distance Scania AC
+        fleetManager.addBus(new Bus(105, "Scania AC Express", "AC", "Kannur", "Trivandrum", "09:45 PM", 20, 1150.0));
+
+        // Bus 106: Late night Super Fast Non-AC
+        fleetManager.addBus(new Bus(106, "Super Fast Non-AC", "Non-AC", "Kochi", "Kannur", "11:10 PM", 20, 540.0));
 
         int port = 8080;
         try {
