@@ -1,0 +1,28 @@
+================================================================================
+BUSGO - ONLINE BUS RESERVATION SYSTEM
+How to Run
+================================================================================
+
+OPTION 1: DOUBLE-CLICK TO RUN (No Terminal Needed)
+--------------------------------------------------------------------------------
+Simply double-click "BusGo.jar".
+The server will start and automatically open http://localhost:8080/ in your browser!
+
+OPTION 2: COMMAND PROMPT / TERMINAL (100% Reliable)
+--------------------------------------------------------------------------------
+1. In this folder, click the File Explorer address bar, type "cmd" and press Enter.
+2. Run:
+      java -jar BusGo.jar
+
+   Or compile and run directly from source:
+      javac -d out src/*.java
+      java -cp out BusReservationSystem
+
+OPTION 3: USING "run.bat"
+--------------------------------------------------------------------------------
+If Windows Smart App Control shows a warning on "run.bat" because it was
+received from the internet:
+1. Right-click "run.bat" -> Properties.
+2. At the bottom of the General tab, check the box: [x] Unblock.
+3. Click OK, then double-click "run.bat".
+================================================================================

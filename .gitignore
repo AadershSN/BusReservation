@@ -1,4 +1,4 @@
-﻿# Compiled Java class files
+# Compiled Java class files
 out/
 *.class
 
@@ -6,3 +6,5 @@ out/
 .DS_Store
 Thumbs.db
 *.log
+*.rar
+*.zip

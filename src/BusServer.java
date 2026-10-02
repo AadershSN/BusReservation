@@ -483,11 +483,18 @@ public class BusServer {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             Path filePath = webDir.resolve(fileName);
-            if (!Files.exists(filePath)) {
-                sendResponse(exchange, 404, "text/plain", "File Not Found");
-                return;
+            byte[] fileBytes;
+            if (Files.exists(filePath)) {
+                fileBytes = Files.readAllBytes(filePath);
+            } else {
+                try (InputStream is = getClass().getResourceAsStream("/web/" + fileName)) {
+                    if (is == null) {
+                        sendResponse(exchange, 404, "text/plain", "File Not Found: " + fileName);
+                        return;
+                    }
+                    fileBytes = is.readAllBytes();
+                }
             }
-            byte[] fileBytes = Files.readAllBytes(filePath);
             exchange.getResponseHeaders().set("Content-Type", contentType + "; charset=UTF-8");
             exchange.sendResponseHeaders(200, fileBytes.length);
             try (OutputStream os = exchange.getResponseBody()) {
@@ -498,10 +505,15 @@ public class BusServer {
 
     private String readTemplate(String filename) throws IOException {
         Path path = webDir.resolve(filename);
-        if (!Files.exists(path)) {
-            throw new IOException("Template file not found: " + path.toAbsolutePath());
+        if (Files.exists(path)) {
+            return Files.readString(path, StandardCharsets.UTF_8);
         }
-        return Files.readString(path, StandardCharsets.UTF_8);
+        try (InputStream is = getClass().getResourceAsStream("/web/" + filename)) {
+            if (is != null) {
+                return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            }
+        }
+        throw new IOException("Template file not found on disk or classpath: " + filename);
     }
 
     private String renderBusCards(ArrayList<Bus> buses) {

@@ -38,6 +38,15 @@ public class BusReservationSystem {
             System.out.println("http://localhost:8080/");
             System.out.println("Press Ctrl+C to stop the server.");
             System.out.println("==================================================");
+
+            // Automatically open default browser if desktop is supported
+            try {
+                if (java.awt.Desktop.isDesktopSupported() && java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.BROWSE)) {
+                    java.awt.Desktop.getDesktop().browse(new java.net.URI("http://localhost:8080/"));
+                }
+            } catch (Exception ignored) {
+                // Headless or browser launch not supported; user can open URL manually
+            }
         } catch (Exception e) {
             System.err.println("Failed to start server on port " + port + ": " + e.getMessage());
             e.printStackTrace();
