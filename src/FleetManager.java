@@ -1,51 +1,79 @@
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * FleetManager.java
- * Central controller managing the fleet of buses and in-memory booking tickets.
+ * Central controller managing the fleet of buses and persistent database bookings.
  */
 public class FleetManager {
     private final ArrayList<Bus> buses = new ArrayList<>();
     private final ArrayList<Ticket> tickets = new ArrayList<>();
+    private final DatabaseManager databaseManager;
     private int nextTicketNumber = 1001;
 
+    public FleetManager() {
+        this(new DatabaseManager());
+    }
+
+    public FleetManager(DatabaseManager databaseManager) {
+        this.databaseManager = databaseManager != null ? databaseManager : new DatabaseManager();
+        loadDatabaseState();
+    }
+
+    private synchronized void loadDatabaseState() {
+        // Load persistent buses if they exist in DB
+        if (databaseManager.hasStoredBuses()) {
+            List<Bus> storedBuses = databaseManager.loadBuses();
+            buses.clear();
+            buses.addAll(storedBuses);
+        }
+
+        // Restore tickets and nextTicketNumber from DB
+        List<DatabaseManager.TicketRecord> storedTickets = databaseManager.getAllTicketRecords();
+        tickets.clear();
+        for (DatabaseManager.TicketRecord rec : storedTickets) {
+            Bus bus = findBus(rec.busNumber);
+            if (bus != null) {
+                Passenger p = new Passenger(rec.passengerName, rec.govtId, rec.contact);
+                Ticket t = new Ticket(rec.ticketNumber, bus, p, rec.seatNumber, rec.seatClass, rec.fare, rec.bookingTime);
+                tickets.add(t);
+            }
+        }
+
+        int maxNum = databaseManager.getMaxTicketNumber();
+        this.nextTicketNumber = Math.max(1001, maxNum + 1);
+    }
+
+    public DatabaseManager getDatabaseManager() {
+        return databaseManager;
+    }
+
     /**
-     * Adds a bus to the fleet.
-     * 
-     * @param bus The bus instance to add
+     * Adds a bus to the fleet and persists it.
      */
     public synchronized void addBus(Bus bus) {
         if (bus == null) {
             throw new IllegalArgumentException("Bus cannot be null.");
         }
+        // Avoid duplicate by busNumber if already loaded from DB
+        for (int i = 0; i < buses.size(); i++) {
+            if (buses.get(i).getBusNumber() == bus.getBusNumber()) {
+                return; // already exists
+            }
+        }
         buses.add(bus);
+        databaseManager.saveBuses(buses);
     }
 
-    /**
-     * Retrieves all buses in the fleet.
-     * 
-     * @return A list copy of all registered buses
-     */
     public synchronized ArrayList<Bus> getBuses() {
         return new ArrayList<>(buses);
     }
 
-    /**
-     * Retrieves all booked tickets.
-     * 
-     * @return A list copy of all active tickets
-     */
     public synchronized ArrayList<Ticket> getTickets() {
         return new ArrayList<>(tickets);
     }
 
-    /**
-     * Finds a bus by its unique bus number.
-     * 
-     * @param busNumber The bus number to search for
-     * @return The Bus object if found, null otherwise
-     */
     public synchronized Bus findBus(int busNumber) {
         for (Bus b : buses) {
             if (b.getBusNumber() == busNumber) {
@@ -55,14 +83,6 @@ public class FleetManager {
         return null;
     }
 
-    /**
-     * Searches buses by source and destination.
-     * Performs case-insensitive matching.
-     * 
-     * @param source Departure city (optional/partial match)
-     * @param destination Arrival city (optional/partial match)
-     * @return List of matching buses
-     */
     public synchronized ArrayList<Bus> searchBus(String source, String destination) {
         ArrayList<Bus> results = new ArrayList<>();
         String srcQuery = (source != null) ? source.trim().toLowerCase() : "";
@@ -79,18 +99,11 @@ public class FleetManager {
         return results;
     }
 
-    /**
-     * Books a seat on a bus and generates a new Ticket.
-     * 
-     * @param busNumber Bus number
-     * @param seatNumber Seat number (1 to totalSeats)
-     * @param seatClass "AC" or "Non-AC"
-     * @param passenger Passenger details
-     * @return The generated Ticket instance
-     * @throws IllegalArgumentException if parameters are invalid or bus is not found
-     * @throws IllegalStateException if the seat is already booked
-     */
     public synchronized Ticket bookTicket(int busNumber, int seatNumber, String seatClass, Passenger passenger) {
+        return bookTicket(busNumber, seatNumber, seatClass, passenger, "guest");
+    }
+
+    public synchronized Ticket bookTicket(int busNumber, int seatNumber, String seatClass, Passenger passenger, String username) {
         if (passenger == null) {
             throw new IllegalArgumentException("Passenger information is required.");
         }
@@ -129,16 +142,13 @@ public class FleetManager {
         Ticket ticket = new Ticket(assignedTicketNumber, bus, passenger, seatNumber, seatClass, fare, LocalDateTime.now());
         tickets.add(ticket);
 
+        // Persist to Database permanently!
+        databaseManager.saveTicket(ticket, username);
+        databaseManager.saveBuses(buses);
+
         return ticket;
     }
 
-    /**
-     * Cancels an existing ticket by its ticket number.
-     * Frees the assigned seat on the bus and removes the ticket from memory.
-     * 
-     * @param ticketNumber The ticket number to cancel
-     * @return The cancelled Ticket if found and cancelled, null if ticket does not exist
-     */
     public synchronized Ticket cancelTicket(int ticketNumber) {
         Ticket ticket = findTicket(ticketNumber);
         if (ticket == null) {
@@ -152,15 +162,14 @@ public class FleetManager {
         }
 
         tickets.remove(ticket);
+
+        // Update Database permanently!
+        databaseManager.deleteTicket(ticketNumber);
+        databaseManager.saveBuses(buses);
+
         return ticket;
     }
 
-    /**
-     * Looks up an active ticket by its ticket number.
-     * 
-     * @param ticketNumber Ticket number
-     * @return Ticket instance or null if not found
-     */
     public synchronized Ticket findTicket(int ticketNumber) {
         for (Ticket t : tickets) {
             if (t.getTicketNumber() == ticketNumber) {

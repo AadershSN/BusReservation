@@ -63,12 +63,18 @@ BusReservation/
 |   +-- Bus.java                 (Bus entity, fares, and seat status)
 |   +-- Passenger.java           (Passenger details and validation)
 |   +-- Ticket.java              (Confirmed ticket and fare calculation)
-|   +-- FleetManager.java        (Fleet operations, book/cancel logic)
-|   +-- BusServer.java           (Built-in HttpServer & route handlers)
+|   +-- User.java                (User account, roles & SHA-256 password hashing)
+|   +-- DatabaseManager.java     (Persistent DB manager: users.db, buses.db, tickets.db)
+|   +-- FleetManager.java        (Fleet operations, book/cancel logic & DB sync)
+|   +-- BusServer.java           (Built-in HttpServer, session tracking & auth routes)
 |   +-- BusReservationSystem.java (Main entry point with sample data)
 |
 +-- web/
 |   +-- index.html               (Home page with search & all bus cards)
+|   +-- login.html               (User authentication page with demo hints)
+|   +-- register.html            (New user registration page)
+|   +-- my-bookings.html         (User journey history & booking dashboard)
+|   +-- admin.html               (Admin dashboard: users.db & tickets.db tables)
 |   +-- search.html              (Search results page by route)
 |   +-- seats.html               (Visual 20-seat coach matrix)
 |   +-- booking.html             (Passenger details submission form)
@@ -76,6 +82,11 @@ BusReservation/
 |   +-- view-ticket.html         (Lookup ticket by ticket number)
 |   +-- cancel-ticket.html       (Cancel ticket & release seat)
 |   +-- style.css                (Custom responsive CSS styling)
+|
++-- data/                        (Persistent database files)
+|   +-- users.db                 (User credentials & accounts)
+|   +-- buses.db                 (Bus fleet & occupied seats persistence)
+|   +-- tickets.db               (Issued tickets & linked passenger records)
 |
 +-- out/                         (Compiled Java .class bytecode)
 |
@@ -139,5 +150,21 @@ You should see the following console output:
    - Enter "1001" and click "Cancel Ticket".
    - Return to Home -> Bus 101 -> Select Seats:
      Seat 07 is now green and available again!
+
+8. AUTHENTICATION & DATABASE SYSTEM
+--------------------------------------------------------------------------------
+- Real Persistent Database:
+  Tables are stored in data/ (users.db, buses.db, tickets.db). All account data,
+  booked seats, and passenger boarding passes survive server restarts.
+- Pre-seeded Accounts:
+  * Passenger Demo: Username: demo   / Password: demo123
+  * System Admin:   Username: admin  / Password: admin123
+- New User Signup:
+  * Users can register their own accounts with full name, phone number, and password.
+- My Bookings:
+  * Logged-in users can view all their past and active bookings in one dashboard.
+- Admin Dashboard:
+  * Accessible via /admin when logged in as "admin". Displays real-time counts,
+    registered users table, and system-wide tickets records table.
 
 ================================================================================

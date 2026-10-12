@@ -3,7 +3,7 @@ title BusGo - Bus Reservation System Server
 echo ==================================================
 echo Compiling BusGo Java files...
 echo ==================================================
-javac -d out src/*.java
+javac -encoding UTF-8 -d out src/*.java
 if %errorlevel% neq 0 (
     echo Compilation failed! Please ensure JDK 17+ is installed.
     pause

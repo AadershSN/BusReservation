@@ -25,4 +25,16 @@ received from the internet:
 1. Right-click "run.bat" -> Properties.
 2. At the bottom of the General tab, check the box: [x] Unblock.
 3. Click OK, then double-click "run.bat".
+
+LOGIN CREDENTIALS (INCLUDED IN DATABASE):
+--------------------------------------------------------------------------------
+Passenger Account : Username: demo   / Password: demo123
+Admin Dashboard   : Username: admin  / Password: admin123
+New User Signup   : Click "Sign Up" on the top right to register any account!
+
+PERSISTENT DATABASE:
+--------------------------------------------------------------------------------
+All user records, fleet bookings, and tickets are stored permanently in the
+"data/" directory (users.db, buses.db, tickets.db).
+Zero database configuration required - works straight out of the box!
 ================================================================================

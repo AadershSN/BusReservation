@@ -18,6 +18,7 @@
                 <a href="/search" class="nav-link">Search Buses</a>
                 <a href="/view-ticket" class="nav-link">View Ticket</a>
                 <a href="/cancel-ticket" class="nav-link">Cancel Ticket</a>
+                {{AUTH_NAV}}
             </nav>
         </div>
     </header>
@@ -73,7 +74,7 @@
 
                         <div class="form-group">
                             <label for="passengerName">Passenger Full Name <span class="required">*</span></label>
-                            <input type="text" id="passengerName" name="passengerName" placeholder="e.g. Rahul Sharma" required autofocus>
+                            <input type="text" id="passengerName" name="passengerName" value="{{PREFILL_NAME}}" placeholder="e.g. Rahul Sharma" required autofocus>
                         </div>
 
                         <div class="form-row-2">
@@ -84,7 +85,7 @@
 
                             <div class="form-group">
                                 <label for="contact">Contact Number <span class="required">*</span></label>
-                                <input type="tel" id="contact" name="contact" placeholder="e.g. 9876543210" required pattern="[0-9]{10,12}" title="Please enter a valid phone number (10-12 digits)">
+                                <input type="tel" id="contact" name="contact" value="{{PREFILL_PHONE}}" placeholder="e.g. 9876543210" required pattern="[0-9]{10,12}" title="Please enter a valid phone number (10-12 digits)">
                             </div>
                         </div>
 

@@ -13,21 +13,28 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 
 /**
  * BusServer.java
  * High-performance HTTP server built on Java's built-in com.sun.net.httpserver.HttpServer.
- * Routes HTTP requests to FleetManager and serves dynamically rendered HTML pages.
+ * Routes HTTP requests to FleetManager, DatabaseManager, manages user authentication/sessions,
+ * and serves dynamically rendered HTML pages.
  */
 public class BusServer {
     private final FleetManager fleetManager;
     private final int port;
     private HttpServer server;
     private final Path webDir;
+    private final Map<String, User> sessions = new ConcurrentHashMap<>();
+    private static final DateTimeFormatter DISPLAY_DATE_FORMAT = DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a");
 
     public BusServer(FleetManager fleetManager, int port) {
         this.fleetManager = fleetManager;
@@ -51,7 +58,7 @@ public class BusServer {
         server = HttpServer.create(new InetSocketAddress(port), 0);
         server.setExecutor(Executors.newFixedThreadPool(10));
 
-        // Register Route Handlers
+        // Core Route Handlers
         server.createContext("/", new HomeHandler());
         server.createContext("/search", new SearchHandler());
         server.createContext("/seats", new SeatsHandler());
@@ -59,6 +66,15 @@ public class BusServer {
         server.createContext("/book", new BookActionHandler());
         server.createContext("/view-ticket", new ViewTicketHandler());
         server.createContext("/cancel-ticket", new CancelTicketHandler());
+
+        // Authentication & Database Account Routes
+        server.createContext("/login", new LoginHandler());
+        server.createContext("/register", new RegisterHandler());
+        server.createContext("/logout", new LogoutHandler());
+        server.createContext("/my-bookings", new MyBookingsHandler());
+        server.createContext("/admin", new AdminHandler());
+
+        // Static Assets
         server.createContext("/style.css", new StaticFileHandler("style.css", "text/css"));
 
         server.start();
@@ -68,6 +84,64 @@ public class BusServer {
         if (server != null) {
             server.stop(0);
         }
+    }
+
+    // ==========================================
+    // Session & Auth Helpers
+    // ==========================================
+
+    private User getSessionUser(HttpExchange exchange) {
+        String cookieHeader = exchange.getRequestHeaders().getFirst("Cookie");
+        if (cookieHeader != null) {
+            String[] cookies = cookieHeader.split(";");
+            for (String c : cookies) {
+                String[] parts = c.trim().split("=", 2);
+                if (parts.length == 2 && "BUSGO_SESSION".equals(parts[0].trim())) {
+                    String token = parts[1].trim();
+                    return sessions.get(token);
+                }
+            }
+        }
+        return null;
+    }
+
+    private void createSession(HttpExchange exchange, User user) {
+        String token = UUID.randomUUID().toString();
+        sessions.put(token, user);
+        exchange.getResponseHeaders().add("Set-Cookie", "BUSGO_SESSION=" + token + "; Path=/; HttpOnly; SameSite=Lax");
+    }
+
+    private void clearSession(HttpExchange exchange) {
+        String cookieHeader = exchange.getRequestHeaders().getFirst("Cookie");
+        if (cookieHeader != null) {
+            String[] cookies = cookieHeader.split(";");
+            for (String c : cookies) {
+                String[] parts = c.trim().split("=", 2);
+                if (parts.length == 2 && "BUSGO_SESSION".equals(parts[0].trim())) {
+                    sessions.remove(parts[1].trim());
+                }
+            }
+        }
+        exchange.getResponseHeaders().add("Set-Cookie", "BUSGO_SESSION=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax");
+    }
+
+    private String renderAuthNav(User user) {
+        if (user == null) {
+            return "<a href=\"/login\" class=\"nav-link btn-nav-login\">Login</a>\n" +
+                   "<a href=\"/register\" class=\"nav-link btn-nav-register\">Sign Up</a>";
+        }
+        StringBuilder sb = new StringBuilder();
+        if (user.isAdmin()) {
+            sb.append("<a href=\"/admin\" class=\"nav-link\">Admin Dashboard</a>\n");
+        }
+        sb.append("<a href=\"/my-bookings\" class=\"nav-link\">My Bookings</a>\n");
+        sb.append("<span class=\"nav-user\">&#128100; ").append(escapeHtml(user.getFullName()));
+        if (user.isAdmin()) {
+            sb.append(" (Admin)");
+        }
+        sb.append("</span>\n");
+        sb.append("<a href=\"/logout\" class=\"nav-link btn-nav-logout\">Logout</a>");
+        return sb.toString();
     }
 
     // ==========================================
@@ -88,14 +162,17 @@ public class BusServer {
                 return;
             }
 
+            User user = getSessionUser(exchange);
             String html = readTemplate("index.html");
             ArrayList<Bus> buses = fleetManager.getBuses();
             String busCardsHtml = renderBusCards(buses);
 
             html = html.replace("{{BUS_CARDS}}", busCardsHtml);
+            html = html.replace("{{AUTH_NAV}}", renderAuthNav(user));
             sendResponse(exchange, 200, "text/html", html);
         }
     }
+
     private class SearchHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
@@ -104,6 +181,7 @@ public class BusServer {
                 return;
             }
 
+            User user = getSessionUser(exchange);
             Map<String, String> params = parseQueryParams(exchange.getRequestURI().getRawQuery());
             String source = params.getOrDefault("source", "").trim();
             String destination = params.getOrDefault("destination", "").trim();
@@ -113,6 +191,7 @@ public class BusServer {
             String html = readTemplate("search.html");
             html = html.replace("{{SEARCH_SOURCE}}", escapeHtml(source));
             html = html.replace("{{SEARCH_DESTINATION}}", escapeHtml(destination));
+            html = html.replace("{{AUTH_NAV}}", renderAuthNav(user));
 
             if (matchingBuses.isEmpty()) {
                 String noBuses = "<div class=\"empty-state\">" +
@@ -139,6 +218,7 @@ public class BusServer {
                 return;
             }
 
+            User user = getSessionUser(exchange);
             Map<String, String> params = parseQueryParams(exchange.getRequestURI().getRawQuery());
             String busNumStr = params.get("busNumber");
 
@@ -173,6 +253,7 @@ public class BusServer {
             html = html.replace("{{AVAILABLE_SEATS}}", String.valueOf(bus.getAvailableSeatsCount()));
             html = html.replace("{{AC_FARE}}", String.valueOf((int)bus.getAcFare()));
             html = html.replace("{{NON_AC_FARE}}", String.valueOf((int)bus.getNonAcFare()));
+            html = html.replace("{{AUTH_NAV}}", renderAuthNav(user));
 
             StringBuilder seatGrid = new StringBuilder();
             seatGrid.append("<div class=\"bus-coach\">\n");
@@ -231,6 +312,7 @@ public class BusServer {
             }
         }
     }
+
     private class BookingHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
@@ -239,6 +321,7 @@ public class BusServer {
                 return;
             }
 
+            User user = getSessionUser(exchange);
             Map<String, String> params = parseQueryParams(exchange.getRequestURI().getRawQuery());
             String busNumStr = params.get("busNumber");
             String seatNumStr = params.get("seatNumber");
@@ -287,6 +370,15 @@ public class BusServer {
             html = html.replace("{{SEAT_NUMBER_RAW}}", String.valueOf(seatNumber));
             html = html.replace("{{AC_FARE}}", String.valueOf((int)bus.getAcFare()));
             html = html.replace("{{NON_AC_FARE}}", String.valueOf((int)bus.getNonAcFare()));
+            html = html.replace("{{AUTH_NAV}}", renderAuthNav(user));
+
+            if (user != null) {
+                html = html.replace("{{PREFILL_NAME}}", escapeHtml(user.getFullName()));
+                html = html.replace("{{PREFILL_PHONE}}", escapeHtml(user.getPhone()));
+            } else {
+                html = html.replace("{{PREFILL_NAME}}", "");
+                html = html.replace("{{PREFILL_PHONE}}", "");
+            }
 
             String alert = "";
             if (params.containsKey("error")) {
@@ -306,6 +398,7 @@ public class BusServer {
                 return;
             }
 
+            User user = getSessionUser(exchange);
             Map<String, String> form = parseFormData(exchange.getRequestBody());
 
             String busNumStr = form.get("busNumber");
@@ -343,10 +436,11 @@ public class BusServer {
                 seatClass = seatClass.trim();
             }
 
+            String username = (user != null) ? user.getUsername() : "guest";
             Ticket ticket;
             try {
                 Passenger passenger = new Passenger(passengerName, passengerId, contact);
-                ticket = fleetManager.bookTicket(busNumber, seatNumber, seatClass, passenger);
+                ticket = fleetManager.bookTicket(busNumber, seatNumber, seatClass, passenger, username);
             } catch (IllegalArgumentException e) {
                 sendErrorPage(exchange, 400, "Booking Failed", e.getMessage());
                 return;
@@ -357,6 +451,7 @@ public class BusServer {
 
             String html = readTemplate("ticket.html");
             html = injectTicketData(html, ticket);
+            html = html.replace("{{AUTH_NAV}}", renderAuthNav(user));
             sendResponse(exchange, 200, "text/html", html);
         }
     }
@@ -364,6 +459,7 @@ public class BusServer {
     private class ViewTicketHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
+            User user = getSessionUser(exchange);
             Map<String, String> params;
             if (exchange.getRequestMethod().equalsIgnoreCase("POST")) {
                 params = parseFormData(exchange.getRequestBody());
@@ -373,6 +469,7 @@ public class BusServer {
 
             String ticketNumStr = params.get("ticketNumber");
             String html = readTemplate("view-ticket.html");
+            html = html.replace("{{AUTH_NAV}}", renderAuthNav(user));
 
             if (ticketNumStr == null || ticketNumStr.trim().isEmpty()) {
                 html = html.replace("{{TICKET_QUERY}}", "");
@@ -396,7 +493,7 @@ public class BusServer {
 
             Ticket ticket = fleetManager.findTicket(ticketNumber);
             if (ticket == null) {
-                html = html.replace("{{ALERT}}", "<div class=\"alert alert-danger\">Ticket not found.</div>");
+                html = html.replace("{{ALERT}}", "<div class=\"alert alert-danger\">Ticket #" + ticketNumber + " not found.</div>");
                 html = html.replace("{{TICKET_RESULT}}", "");
             } else {
                 html = html.replace("{{ALERT}}", "<div class=\"alert alert-success\">Ticket found successfully!</div>");
@@ -406,9 +503,11 @@ public class BusServer {
             sendResponse(exchange, 200, "text/html", html);
         }
     }
+
     private class CancelTicketHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
+            User user = getSessionUser(exchange);
             Map<String, String> params;
             if (exchange.getRequestMethod().equalsIgnoreCase("POST")) {
                 params = parseFormData(exchange.getRequestBody());
@@ -418,6 +517,7 @@ public class BusServer {
 
             String ticketNumStr = params.get("ticketNumber");
             String html = readTemplate("cancel-ticket.html");
+            html = html.replace("{{AUTH_NAV}}", renderAuthNav(user));
 
             if (ticketNumStr == null || ticketNumStr.trim().isEmpty()) {
                 html = html.replace("{{TICKET_QUERY}}", "");
@@ -441,7 +541,7 @@ public class BusServer {
 
             Ticket cancelledTicket = fleetManager.cancelTicket(ticketNumber);
             if (cancelledTicket == null) {
-                html = html.replace("{{ALERT}}", "<div class=\"alert alert-danger\">Ticket not found.</div>");
+                html = html.replace("{{ALERT}}", "<div class=\"alert alert-danger\">Ticket #" + ticketNumber + " not found or already cancelled.</div>");
                 html = html.replace("{{CANCELLATION_RESULT}}", "");
             } else {
                 String successMsg = "<div class=\"alert alert-success\">Ticket #" + ticketNumber + 
@@ -452,11 +552,11 @@ public class BusServer {
                 
                 String summary = "<div class=\"card confirmation-card\">\n" +
                                  "  <h3>Cancellation Receipt</h3>\n" +
-                                 "  <p><strong>Ticket Number:</strong> " + cancelledTicket.getTicketNumber() + "</p>\n" +
+                                 "  <p><strong>Ticket Number:</strong> #" + cancelledTicket.getTicketNumber() + "</p>\n" +
                                  "  <p><strong>Passenger:</strong> " + escapeHtml(cancelledTicket.getPassenger().getPassengerName()) + "</p>\n" +
                                  "  <p><strong>Bus:</strong> #" + cancelledTicket.getBus().getBusNumber() + " (" + 
                                  escapeHtml(cancelledTicket.getBus().getSource()) + " &rarr; " + escapeHtml(cancelledTicket.getBus().getDestination()) + ")</p>\n" +
-                                 "  <p><strong>Seat Released:</strong> " + String.format("%02d", cancelledTicket.getSeatNumber()) + "</p>\n" +
+                                 "  <p><strong>Seat Released:</strong> Seat " + String.format("%02d", cancelledTicket.getSeatNumber()) + "</p>\n" +
                                  "  <p><strong>Refund Amount:</strong> Rs." + (int)cancelledTicket.getFare() + "</p>\n" +
                                  "  <div style=\"margin-top: 15px;\">\n" +
                                  "    <a href=\"/\" class=\"btn btn-primary\">Return to Home</a>\n" +
@@ -466,6 +566,338 @@ public class BusServer {
                 html = html.replace("{{ALERT}}", successMsg);
                 html = html.replace("{{CANCELLATION_RESULT}}", summary);
             }
+
+            sendResponse(exchange, 200, "text/html", html);
+        }
+    }
+
+    private class LoginHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            User currentUser = getSessionUser(exchange);
+            if (exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                if (currentUser != null) {
+                    sendRedirect(exchange, currentUser.isAdmin() ? "/admin" : "/my-bookings");
+                    return;
+                }
+
+                Map<String, String> params = parseQueryParams(exchange.getRequestURI().getRawQuery());
+                String html = readTemplate("login.html");
+                html = html.replace("{{AUTH_NAV}}", renderAuthNav(null));
+
+                String alert = "";
+                if (params.containsKey("error")) {
+                    alert = "<div class=\"alert alert-danger\">" + escapeHtml(params.get("error")) + "</div>";
+                } else if (params.containsKey("msg")) {
+                    alert = "<div class=\"alert alert-success\">" + escapeHtml(params.get("msg")) + "</div>";
+                }
+                html = html.replace("{{ALERT}}", alert);
+
+                sendResponse(exchange, 200, "text/html", html);
+                return;
+            }
+
+            if (exchange.getRequestMethod().equalsIgnoreCase("POST")) {
+                Map<String, String> form = parseFormData(exchange.getRequestBody());
+                String username = form.get("username");
+                String password = form.get("password");
+
+                if (username == null || username.trim().isEmpty() || password == null || password.trim().isEmpty()) {
+                    renderLoginPageWithError(exchange, "Please enter both username and password.");
+                    return;
+                }
+
+                User user = fleetManager.getDatabaseManager().authenticate(username.trim(), password);
+                if (user == null) {
+                    renderLoginPageWithError(exchange, "Invalid username or password. Please try again.");
+                    return;
+                }
+
+                createSession(exchange, user);
+                if (user.isAdmin()) {
+                    sendRedirect(exchange, "/admin");
+                } else {
+                    sendRedirect(exchange, "/my-bookings");
+                }
+                return;
+            }
+
+            sendResponse(exchange, 405, "text/plain", "Method Not Allowed");
+        }
+
+        private void renderLoginPageWithError(HttpExchange exchange, String errorMsg) throws IOException {
+            String html = readTemplate("login.html");
+            html = html.replace("{{AUTH_NAV}}", renderAuthNav(null));
+            html = html.replace("{{ALERT}}", "<div class=\"alert alert-danger\">" + escapeHtml(errorMsg) + "</div>");
+            sendResponse(exchange, 200, "text/html", html);
+        }
+    }
+
+    private class RegisterHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            User currentUser = getSessionUser(exchange);
+            if (exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                if (currentUser != null) {
+                    sendRedirect(exchange, "/");
+                    return;
+                }
+
+                Map<String, String> params = parseQueryParams(exchange.getRequestURI().getRawQuery());
+                String html = readTemplate("register.html");
+                html = html.replace("{{AUTH_NAV}}", renderAuthNav(null));
+
+                String alert = "";
+                if (params.containsKey("error")) {
+                    alert = "<div class=\"alert alert-danger\">" + escapeHtml(params.get("error")) + "</div>";
+                }
+                html = html.replace("{{ALERT}}", alert);
+
+                sendResponse(exchange, 200, "text/html", html);
+                return;
+            }
+
+            if (exchange.getRequestMethod().equalsIgnoreCase("POST")) {
+                Map<String, String> form = parseFormData(exchange.getRequestBody());
+                String fullName = form.get("fullName");
+                String username = form.get("username");
+                String phone = form.get("phone");
+                String password = form.get("password");
+                String confirmPassword = form.get("confirmPassword");
+
+                if (fullName == null || username == null || phone == null || password == null ||
+                    fullName.trim().isEmpty() || username.trim().isEmpty() || phone.trim().isEmpty() || password.trim().isEmpty()) {
+                    renderRegisterPageWithError(exchange, "All fields are required.");
+                    return;
+                }
+
+                if (password.length() < 4) {
+                    renderRegisterPageWithError(exchange, "Password must be at least 4 characters long.");
+                    return;
+                }
+
+                if (confirmPassword != null && !password.equals(confirmPassword)) {
+                    renderRegisterPageWithError(exchange, "Passwords do not match.");
+                    return;
+                }
+
+                try {
+                    User newUser = fleetManager.getDatabaseManager().registerUser(username.trim(), password, fullName.trim(), phone.trim());
+                    createSession(exchange, newUser);
+                    sendRedirect(exchange, "/my-bookings?msg=Welcome+to+BusGo!+Your+account+has+been+created+successfully.");
+                } catch (IllegalArgumentException e) {
+                    renderRegisterPageWithError(exchange, e.getMessage());
+                }
+                return;
+            }
+
+            sendResponse(exchange, 405, "text/plain", "Method Not Allowed");
+        }
+
+        private void renderRegisterPageWithError(HttpExchange exchange, String errorMsg) throws IOException {
+            String html = readTemplate("register.html");
+            html = html.replace("{{AUTH_NAV}}", renderAuthNav(null));
+            html = html.replace("{{ALERT}}", "<div class=\"alert alert-danger\">" + escapeHtml(errorMsg) + "</div>");
+            sendResponse(exchange, 200, "text/html", html);
+        }
+    }
+
+    private class LogoutHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            clearSession(exchange);
+            sendRedirect(exchange, "/login?msg=You+have+been+logged+out+successfully.");
+        }
+    }
+
+    private class MyBookingsHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                sendResponse(exchange, 405, "text/plain", "Method Not Allowed");
+                return;
+            }
+
+            User user = getSessionUser(exchange);
+            if (user == null) {
+                sendRedirect(exchange, "/login?error=Please+log+in+to+view+your+bookings.");
+                return;
+            }
+
+            Map<String, String> params = parseQueryParams(exchange.getRequestURI().getRawQuery());
+            String html = readTemplate("my-bookings.html");
+            html = html.replace("{{AUTH_NAV}}", renderAuthNav(user));
+            html = html.replace("{{USER_NAME}}", escapeHtml(user.getFullName()));
+
+            String alert = "";
+            if (params.containsKey("msg")) {
+                alert = "<div class=\"alert alert-success\">" + escapeHtml(params.get("msg")) + "</div>";
+            } else if (params.containsKey("error")) {
+                alert = "<div class=\"alert alert-danger\">" + escapeHtml(params.get("error")) + "</div>";
+            }
+            html = html.replace("{{ALERT}}", alert);
+
+            List<DatabaseManager.TicketRecord> userTickets = fleetManager.getDatabaseManager().getUserTickets(user.getUsername());
+            if (userTickets.isEmpty()) {
+                String emptyHtml = "<div class=\"empty-state\" style=\"margin-top: 20px;\">\n" +
+                                   "  <h3>No Bookings Found</h3>\n" +
+                                   "  <p>You haven't made any bus reservations yet. Choose a route and book your first journey!</p>\n" +
+                                   "  <a href=\"/\" class=\"btn btn-primary\" style=\"margin-top: 15px;\">Search &amp; Book Buses</a>\n" +
+                                   "</div>";
+                html = html.replace("{{BOOKINGS_TABLE}}", emptyHtml);
+            } else {
+                StringBuilder table = new StringBuilder();
+                table.append("<table class=\"data-table\">\n");
+                table.append("  <thead>\n");
+                table.append("    <tr>\n");
+                table.append("      <th>Ticket #</th>\n");
+                table.append("      <th>Bus &amp; Route</th>\n");
+                table.append("      <th>Passenger</th>\n");
+                table.append("      <th>Seat</th>\n");
+                table.append("      <th>Class</th>\n");
+                table.append("      <th>Fare</th>\n");
+                table.append("      <th>Booked At</th>\n");
+                table.append("      <th>Actions</th>\n");
+                table.append("    </tr>\n");
+                table.append("  </thead>\n");
+                table.append("  <tbody>\n");
+
+                for (DatabaseManager.TicketRecord rec : userTickets) {
+                    Bus bus = fleetManager.findBus(rec.busNumber);
+                    String routeStr = (bus != null) ? (escapeHtml(bus.getSource()) + " &rarr; " + escapeHtml(bus.getDestination())) : "Bus #" + rec.busNumber;
+                    String timeStr = (rec.bookingTime != null) ? rec.bookingTime.format(DISPLAY_DATE_FORMAT) : "N/A";
+
+                    table.append("    <tr>\n");
+                    table.append("      <td><strong>#").append(rec.ticketNumber).append("</strong></td>\n");
+                    table.append("      <td>Bus #").append(rec.busNumber).append("<br><small class=\"text-muted\">").append(routeStr).append("</small></td>\n");
+                    table.append("      <td>").append(escapeHtml(rec.passengerName)).append("<br><small class=\"text-muted\">").append(escapeHtml(rec.contact)).append("</small></td>\n");
+                    table.append("      <td><span class=\"seat-highlight\">Seat ").append(String.format("%02d", rec.seatNumber)).append("</span></td>\n");
+                    table.append("      <td><span class=\"class-tag\">").append(escapeHtml(rec.seatClass)).append("</span></td>\n");
+                    table.append("      <td><strong>Rs.").append((int)rec.fare).append("</strong></td>\n");
+                    table.append("      <td><small>").append(timeStr).append("</small></td>\n");
+                    table.append("      <td>\n");
+                    table.append("        <a href=\"/view-ticket?ticketNumber=").append(rec.ticketNumber).append("\" class=\"btn btn-sm btn-primary\" style=\"margin-right: 4px;\">View</a>\n");
+                    table.append("        <a href=\"/cancel-ticket?ticketNumber=").append(rec.ticketNumber).append("\" class=\"btn btn-sm btn-danger\">Cancel</a>\n");
+                    table.append("      </td>\n");
+                    table.append("    </tr>\n");
+                }
+
+                table.append("  </tbody>\n");
+                table.append("</table>\n");
+                html = html.replace("{{BOOKINGS_TABLE}}", table.toString());
+            }
+
+            sendResponse(exchange, 200, "text/html", html);
+        }
+    }
+
+    private class AdminHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                sendResponse(exchange, 405, "text/plain", "Method Not Allowed");
+                return;
+            }
+
+            User user = getSessionUser(exchange);
+            if (user == null || !user.isAdmin()) {
+                sendErrorPage(exchange, 403, "Access Denied", "Administrator privilege required. Please log in with an administrator account.");
+                return;
+            }
+
+            Map<String, String> params = parseQueryParams(exchange.getRequestURI().getRawQuery());
+            String html = readTemplate("admin.html");
+            html = html.replace("{{AUTH_NAV}}", renderAuthNav(user));
+
+            String alert = "";
+            if (params.containsKey("msg")) {
+                alert = "<div class=\"alert alert-success\">" + escapeHtml(params.get("msg")) + "</div>";
+            }
+            html = html.replace("{{ALERT}}", alert);
+
+            List<User> allUsers = fleetManager.getDatabaseManager().getAllUsers();
+            List<DatabaseManager.TicketRecord> allTickets = fleetManager.getDatabaseManager().getAllTicketRecords();
+            ArrayList<Bus> buses = fleetManager.getBuses();
+
+            html = html.replace("{{TOTAL_USERS}}", String.valueOf(allUsers.size()));
+            html = html.replace("{{TOTAL_BUSES}}", String.valueOf(buses.size()));
+            html = html.replace("{{TOTAL_BOOKINGS}}", String.valueOf(allTickets.size()));
+
+            // Render Users Table
+            StringBuilder usersTable = new StringBuilder();
+            usersTable.append("<div class=\"data-table-container\">\n");
+            usersTable.append("<table class=\"data-table\">\n");
+            usersTable.append("  <thead>\n");
+            usersTable.append("    <tr>\n");
+            usersTable.append("      <th>ID</th>\n");
+            usersTable.append("      <th>Username</th>\n");
+            usersTable.append("      <th>Full Name</th>\n");
+            usersTable.append("      <th>Phone</th>\n");
+            usersTable.append("      <th>Role</th>\n");
+            usersTable.append("    </tr>\n");
+            usersTable.append("  </thead>\n");
+            usersTable.append("  <tbody>\n");
+            for (User u : allUsers) {
+                usersTable.append("    <tr>\n");
+                usersTable.append("      <td>#").append(u.getId()).append("</td>\n");
+                usersTable.append("      <td><strong>").append(escapeHtml(u.getUsername())).append("</strong></td>\n");
+                usersTable.append("      <td>").append(escapeHtml(u.getFullName())).append("</td>\n");
+                usersTable.append("      <td>").append(escapeHtml(u.getPhone())).append("</td>\n");
+                String badgeClass = u.isAdmin() ? "role-admin" : "role-user";
+                usersTable.append("      <td><span class=\"role-badge ").append(badgeClass).append("\">").append(escapeHtml(u.getRole())).append("</span></td>\n");
+                usersTable.append("    </tr>\n");
+            }
+            usersTable.append("  </tbody>\n");
+            usersTable.append("</table>\n");
+            usersTable.append("</div>\n");
+            html = html.replace("{{USERS_TABLE}}", usersTable.toString());
+
+            // Render All Bookings Table
+            StringBuilder bookingsTable = new StringBuilder();
+            if (allTickets.isEmpty()) {
+                bookingsTable.append("<div class=\"empty-state\"><p>No ticket reservations currently in database.</p></div>");
+            } else {
+                bookingsTable.append("<div class=\"data-table-container\">\n");
+                bookingsTable.append("<table class=\"data-table\">\n");
+                bookingsTable.append("  <thead>\n");
+                bookingsTable.append("    <tr>\n");
+                bookingsTable.append("      <th>Ticket #</th>\n");
+                bookingsTable.append("      <th>Account</th>\n");
+                bookingsTable.append("      <th>Passenger</th>\n");
+                bookingsTable.append("      <th>Bus &amp; Route</th>\n");
+                bookingsTable.append("      <th>Seat</th>\n");
+                bookingsTable.append("      <th>Class</th>\n");
+                bookingsTable.append("      <th>Fare</th>\n");
+                bookingsTable.append("      <th>Booked At</th>\n");
+                bookingsTable.append("      <th>Actions</th>\n");
+                bookingsTable.append("    </tr>\n");
+                bookingsTable.append("  </thead>\n");
+                bookingsTable.append("  <tbody>\n");
+                for (DatabaseManager.TicketRecord rec : allTickets) {
+                    Bus bus = fleetManager.findBus(rec.busNumber);
+                    String routeStr = (bus != null) ? (escapeHtml(bus.getSource()) + " &rarr; " + escapeHtml(bus.getDestination())) : "Bus #" + rec.busNumber;
+                    String timeStr = (rec.bookingTime != null) ? rec.bookingTime.format(DISPLAY_DATE_FORMAT) : "N/A";
+
+                    bookingsTable.append("    <tr>\n");
+                    bookingsTable.append("      <td><strong>#").append(rec.ticketNumber).append("</strong></td>\n");
+                    bookingsTable.append("      <td><span class=\"role-badge role-user\">").append(escapeHtml(rec.username)).append("</span></td>\n");
+                    bookingsTable.append("      <td>").append(escapeHtml(rec.passengerName)).append("<br><small class=\"text-muted\">").append(escapeHtml(rec.contact)).append("</small></td>\n");
+                    bookingsTable.append("      <td>Bus #").append(rec.busNumber).append("<br><small class=\"text-muted\">").append(routeStr).append("</small></td>\n");
+                    bookingsTable.append("      <td><span class=\"seat-highlight\">Seat ").append(String.format("%02d", rec.seatNumber)).append("</span></td>\n");
+                    bookingsTable.append("      <td><span class=\"class-tag\">").append(escapeHtml(rec.seatClass)).append("</span></td>\n");
+                    bookingsTable.append("      <td><strong>Rs.").append((int)rec.fare).append("</strong></td>\n");
+                    bookingsTable.append("      <td><small>").append(timeStr).append("</small></td>\n");
+                    bookingsTable.append("      <td>\n");
+                    bookingsTable.append("        <a href=\"/view-ticket?ticketNumber=").append(rec.ticketNumber).append("\" class=\"btn btn-sm btn-primary\" style=\"margin-right: 4px;\">View</a>\n");
+                    bookingsTable.append("        <a href=\"/cancel-ticket?ticketNumber=").append(rec.ticketNumber).append("\" class=\"btn btn-sm btn-danger\">Cancel</a>\n");
+                    bookingsTable.append("      </td>\n");
+                    bookingsTable.append("    </tr>\n");
+                }
+                bookingsTable.append("  </tbody>\n");
+                bookingsTable.append("</table>\n");
+                bookingsTable.append("</div>\n");
+            }
+            html = html.replace("{{ALL_BOOKINGS_TABLE}}", bookingsTable.toString());
 
             sendResponse(exchange, 200, "text/html", html);
         }
@@ -592,6 +1024,7 @@ public class BusServer {
         html = html.replace("{{RAW_TICKET_TEXT}}", escapeHtml(ticket.toString()));
         return html;
     }
+
     private String renderTicketCard(Ticket ticket) {
         Bus bus = ticket.getBus();
         Passenger passenger = ticket.getPassenger();
@@ -679,7 +1112,7 @@ public class BusServer {
     private static void sendErrorPage(HttpExchange exchange, int statusCode, String title, String message) throws IOException {
         String html = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>" + escapeHtml(title) + 
                       "</title><link rel=\"stylesheet\" href=\"/style.css\"></head><body>" +
-                      "<header class=\"site-header\"><div class=\"header-container\"><a href=\"/\" class=\"brand\">BusGo</a></div></header>" +
+                      "<header class=\"site-header\"><div class=\"header-container\"><a href=\"/\" class=\"brand-logo\">&#128652; BusGo</a></div></header>" +
                       "<div class=\"container\"><div class=\"alert alert-danger\" style=\"margin-top: 50px;\">" +
                       "<h2>" + escapeHtml(title) + "</h2><p>" + escapeHtml(message) + "</p>" +
                       "<a href=\"/\" class=\"btn btn-primary\" style=\"margin-top: 15px;\">Return to Home</a>" +

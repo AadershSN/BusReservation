@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookings - BusGo</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-container">
+            <div class="brand-group">
+                <a href="/" class="brand-logo">&#128652; BusGo</a>
+                <span class="brand-tagline">Online Bus Reservation System</span>
+            </div>
+            <nav class="site-nav">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/search" class="nav-link">Search Buses</a>
+                <a href="/view-ticket" class="nav-link">View Ticket</a>
+                <a href="/cancel-ticket" class="nav-link">Cancel Ticket</a>
+                {{AUTH_NAV}}
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content container">
+        <section class="page-title-section">
+            <h1>&#128197; My Bookings</h1>
+            <p>Here are all the bus reservations associated with your account <strong>({{USER_NAME}})</strong>.</p>
+        </section>
+
+        {{ALERT}}
+
+        <div class="bookings-table-container">
+            {{BOOKINGS_TABLE}}
+        </div>
+
+        <div style="margin-top: 25px; text-align: center;">
+            <a href="/" class="btn btn-primary">&#128652; Book Another Journey</a>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-container">
+            <p>&copy; 2026 BusGo Reservation System. Developed with standard Java &amp; HTML/CSS.</p>
+            <p class="footer-sub">Zero Frameworks &bull; Persistent Database &bull; Built-in Java HttpServer</p>
+        </div>
+    </footer>
+</body>
+</html>

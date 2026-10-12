@@ -1076,3 +1076,226 @@ body {
         color: #ffffff !important;
     }
 }
+
+/* =========================================================
+   Authentication (Login & Register) & User Profiles
+   ========================================================= */
+
+.auth-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 30px 15px;
+}
+
+.auth-card {
+    max-width: 480px;
+    width: 100%;
+    background: #ffffff;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 35px 30px;
+    border: 1px solid var(--border-color);
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.auth-header h2 {
+    color: var(--primary-dark);
+    font-size: 1.6rem;
+    margin-bottom: 8px;
+}
+
+.auth-header p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.btn-block {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.auth-demo-hint {
+    margin-top: 25px;
+    padding: 14px 16px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+}
+
+.auth-demo-hint h4 {
+    margin-bottom: 6px;
+    color: var(--primary);
+    font-size: 0.9rem;
+}
+
+.auth-demo-hint code {
+    background: #e2e8f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.auth-footer-link {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.auth-footer-link a {
+    color: var(--primary-light);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.auth-footer-link a:hover {
+    text-decoration: underline;
+}
+
+/* Nav User Profile Elements */
+.nav-user {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-nav-login {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 6px;
+    padding: 6px 14px !important;
+}
+
+.btn-nav-register {
+    background: var(--accent-green);
+    color: #ffffff !important;
+    border-radius: 6px;
+    padding: 6px 14px !important;
+    font-weight: 700;
+}
+
+.btn-nav-logout {
+    color: #fca5a5 !important;
+}
+
+.btn-nav-logout:hover {
+    color: #ef4444 !important;
+}
+
+/* Data Tables (My Bookings & Admin Dashboard) */
+.data-table-container, .bookings-table-container {
+    background: #ffffff;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    overflow-x: auto;
+    margin-top: 20px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    text-align: left;
+}
+
+.data-table th {
+    background: #f1f5f9;
+    color: var(--primary-dark);
+    padding: 14px 18px;
+    font-weight: 700;
+    border-bottom: 2px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.data-table td {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-main);
+    vertical-align: middle;
+}
+
+.data-table tr:hover {
+    background: #f8fafc;
+}
+
+.data-table .status-confirmed {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: #ecfdf5;
+    color: #065f46;
+    font-weight: 700;
+    font-size: 0.8rem;
+}
+
+.data-table .role-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.role-admin {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.role-user {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+/* Admin Dashboard Stats Grid */
+.admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin: 25px 0 35px;
+}
+
+.stat-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-left: 5px solid var(--primary-light);
+}
+
+.stat-num {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--primary-dark);
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-sm {
+    padding: 5px 12px;
+    font-size: 0.8rem;
+    border-radius: 4px;
+}

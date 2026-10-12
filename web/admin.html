@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - BusGo</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-container">
+            <div class="brand-group">
+                <a href="/" class="brand-logo">&#128652; BusGo</a>
+                <span class="brand-tagline">Online Bus Reservation System</span>
+            </div>
+            <nav class="site-nav">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/search" class="nav-link">Search Buses</a>
+                <a href="/view-ticket" class="nav-link">View Ticket</a>
+                <a href="/cancel-ticket" class="nav-link">Cancel Ticket</a>
+                {{AUTH_NAV}}
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content container">
+        <section class="page-title-section admin-hero">
+            <h1>&#128737; Admin Database Management Dashboard</h1>
+            <p>Real-time overview of users, fleet status, and all passenger ticket records stored in the database.</p>
+        </section>
+
+        {{ALERT}}
+
+        <div class="admin-stats-grid">
+            <div class="stat-card">
+                <span class="stat-num">{{TOTAL_USERS}}</span>
+                <span class="stat-label">Registered Users</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-num">{{TOTAL_BUSES}}</span>
+                <span class="stat-label">Fleet Buses</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-num">{{TOTAL_BOOKINGS}}</span>
+                <span class="stat-label">Total Bookings</span>
+            </div>
+        </div>
+
+        <section class="admin-section">
+            <div class="section-header">
+                <h2>&#128101; Registered Users Table (users.db)</h2>
+            </div>
+            {{USERS_TABLE}}
+        </section>
+
+        <section class="admin-section" style="margin-top: 35px;">
+            <div class="section-header">
+                <h2>&#127915; All System Bookings (tickets.db)</h2>
+            </div>
+            {{ALL_BOOKINGS_TABLE}}
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-container">
+            <p>&copy; 2026 BusGo Reservation System. Developed with standard Java &amp; HTML/CSS.</p>
+            <p class="footer-sub">Zero Frameworks &bull; Persistent Database &bull; Built-in Java HttpServer</p>
+        </div>
+    </footer>
+</body>
+</html>
