@@ -27,6 +27,8 @@ import java.util.concurrent.Executors;
  * High-performance HTTP server built on Java's built-in com.sun.net.httpserver.HttpServer.
  * Routes HTTP requests to FleetManager, DatabaseManager, manages user authentication/sessions,
  * and serves dynamically rendered HTML pages.
+ * 
+ * Gatekeeper flow: First the Login page, then all other pages needed for bus booking.
  */
 public class BusServer {
     private final FleetManager fleetManager;
@@ -58,7 +60,7 @@ public class BusServer {
         server = HttpServer.create(new InetSocketAddress(port), 0);
         server.setExecutor(Executors.newFixedThreadPool(10));
 
-        // Core Route Handlers
+        // Core Route Handlers (Protected behind authentication)
         server.createContext("/", new HomeHandler());
         server.createContext("/search", new SearchHandler());
         server.createContext("/seats", new SeatsHandler());
@@ -66,13 +68,13 @@ public class BusServer {
         server.createContext("/book", new BookActionHandler());
         server.createContext("/view-ticket", new ViewTicketHandler());
         server.createContext("/cancel-ticket", new CancelTicketHandler());
+        server.createContext("/my-bookings", new MyBookingsHandler());
+        server.createContext("/admin", new AdminHandler());
 
-        // Authentication & Database Account Routes
+        // Authentication & Database Account Routes (Public entry points)
         server.createContext("/login", new LoginHandler());
         server.createContext("/register", new RegisterHandler());
         server.createContext("/logout", new LogoutHandler());
-        server.createContext("/my-bookings", new MyBookingsHandler());
-        server.createContext("/admin", new AdminHandler());
 
         // Static Assets
         server.createContext("/style.css", new StaticFileHandler("style.css", "text/css"));
@@ -162,13 +164,27 @@ public class BusServer {
                 return;
             }
 
+            // Authentication gate: First the login page!
             User user = getSessionUser(exchange);
+            if (user == null) {
+                sendRedirect(exchange, "/login");
+                return;
+            }
+
+            Map<String, String> params = parseQueryParams(exchange.getRequestURI().getRawQuery());
             String html = readTemplate("index.html");
             ArrayList<Bus> buses = fleetManager.getBuses();
             String busCardsHtml = renderBusCards(buses);
 
             html = html.replace("{{BUS_CARDS}}", busCardsHtml);
             html = html.replace("{{AUTH_NAV}}", renderAuthNav(user));
+
+            String alert = "";
+            if (params.containsKey("msg")) {
+                alert = "<div class=\"container\" style=\"margin-top: 15px;\"><div class=\"alert alert-success\">" + escapeHtml(params.get("msg")) + "</div></div>";
+            }
+            html = html.replace("{{ALERT}}", alert);
+
             sendResponse(exchange, 200, "text/html", html);
         }
     }
@@ -181,7 +197,13 @@ public class BusServer {
                 return;
             }
 
+            // Authentication gate: First the login page!
             User user = getSessionUser(exchange);
+            if (user == null) {
+                sendRedirect(exchange, "/login?error=Please+log+in+first+to+search+and+book+buses.");
+                return;
+            }
+
             Map<String, String> params = parseQueryParams(exchange.getRequestURI().getRawQuery());
             String source = params.getOrDefault("source", "").trim();
             String destination = params.getOrDefault("destination", "").trim();
@@ -218,7 +240,13 @@ public class BusServer {
                 return;
             }
 
+            // Authentication gate: First the login page!
             User user = getSessionUser(exchange);
+            if (user == null) {
+                sendRedirect(exchange, "/login?error=Please+log+in+first+to+select+seats.");
+                return;
+            }
+
             Map<String, String> params = parseQueryParams(exchange.getRequestURI().getRawQuery());
             String busNumStr = params.get("busNumber");
 
@@ -321,7 +349,13 @@ public class BusServer {
                 return;
             }
 
+            // Authentication gate: First the login page!
             User user = getSessionUser(exchange);
+            if (user == null) {
+                sendRedirect(exchange, "/login?error=Please+log+in+first+to+proceed+with+booking.");
+                return;
+            }
+
             Map<String, String> params = parseQueryParams(exchange.getRequestURI().getRawQuery());
             String busNumStr = params.get("busNumber");
             String seatNumStr = params.get("seatNumber");
@@ -398,7 +432,13 @@ public class BusServer {
                 return;
             }
 
+            // Authentication gate: First the login page!
             User user = getSessionUser(exchange);
+            if (user == null) {
+                sendRedirect(exchange, "/login?error=Session+expired.+Please+log+in+again.");
+                return;
+            }
+
             Map<String, String> form = parseFormData(exchange.getRequestBody());
 
             String busNumStr = form.get("busNumber");
@@ -436,7 +476,7 @@ public class BusServer {
                 seatClass = seatClass.trim();
             }
 
-            String username = (user != null) ? user.getUsername() : "guest";
+            String username = user.getUsername();
             Ticket ticket;
             try {
                 Passenger passenger = new Passenger(passengerName, passengerId, contact);
@@ -459,7 +499,13 @@ public class BusServer {
     private class ViewTicketHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
+            // Authentication gate: First the login page!
             User user = getSessionUser(exchange);
+            if (user == null) {
+                sendRedirect(exchange, "/login?error=Please+log+in+first+to+view+tickets.");
+                return;
+            }
+
             Map<String, String> params;
             if (exchange.getRequestMethod().equalsIgnoreCase("POST")) {
                 params = parseFormData(exchange.getRequestBody());
@@ -507,7 +553,13 @@ public class BusServer {
     private class CancelTicketHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
+            // Authentication gate: First the login page!
             User user = getSessionUser(exchange);
+            if (user == null) {
+                sendRedirect(exchange, "/login?error=Please+log+in+first+to+cancel+tickets.");
+                return;
+            }
+
             Map<String, String> params;
             if (exchange.getRequestMethod().equalsIgnoreCase("POST")) {
                 params = parseFormData(exchange.getRequestBody());
@@ -577,13 +629,12 @@ public class BusServer {
             User currentUser = getSessionUser(exchange);
             if (exchange.getRequestMethod().equalsIgnoreCase("GET")) {
                 if (currentUser != null) {
-                    sendRedirect(exchange, currentUser.isAdmin() ? "/admin" : "/my-bookings");
+                    sendRedirect(exchange, currentUser.isAdmin() ? "/admin" : "/");
                     return;
                 }
 
                 Map<String, String> params = parseQueryParams(exchange.getRequestURI().getRawQuery());
                 String html = readTemplate("login.html");
-                html = html.replace("{{AUTH_NAV}}", renderAuthNav(null));
 
                 String alert = "";
                 if (params.containsKey("error")) {
@@ -617,7 +668,7 @@ public class BusServer {
                 if (user.isAdmin()) {
                     sendRedirect(exchange, "/admin");
                 } else {
-                    sendRedirect(exchange, "/my-bookings");
+                    sendRedirect(exchange, "/"); // Lands directly on bus booking page!
                 }
                 return;
             }
@@ -627,7 +678,6 @@ public class BusServer {
 
         private void renderLoginPageWithError(HttpExchange exchange, String errorMsg) throws IOException {
             String html = readTemplate("login.html");
-            html = html.replace("{{AUTH_NAV}}", renderAuthNav(null));
             html = html.replace("{{ALERT}}", "<div class=\"alert alert-danger\">" + escapeHtml(errorMsg) + "</div>");
             sendResponse(exchange, 200, "text/html", html);
         }
@@ -645,7 +695,6 @@ public class BusServer {
 
                 Map<String, String> params = parseQueryParams(exchange.getRequestURI().getRawQuery());
                 String html = readTemplate("register.html");
-                html = html.replace("{{AUTH_NAV}}", renderAuthNav(null));
 
                 String alert = "";
                 if (params.containsKey("error")) {
@@ -684,7 +733,7 @@ public class BusServer {
                 try {
                     User newUser = fleetManager.getDatabaseManager().registerUser(username.trim(), password, fullName.trim(), phone.trim());
                     createSession(exchange, newUser);
-                    sendRedirect(exchange, "/my-bookings?msg=Welcome+to+BusGo!+Your+account+has+been+created+successfully.");
+                    sendRedirect(exchange, "/?msg=Welcome+to+BusGo!+Your+account+has+been+created+successfully.");
                 } catch (IllegalArgumentException e) {
                     renderRegisterPageWithError(exchange, e.getMessage());
                 }
@@ -696,7 +745,6 @@ public class BusServer {
 
         private void renderRegisterPageWithError(HttpExchange exchange, String errorMsg) throws IOException {
             String html = readTemplate("register.html");
-            html = html.replace("{{AUTH_NAV}}", renderAuthNav(null));
             html = html.replace("{{ALERT}}", "<div class=\"alert alert-danger\">" + escapeHtml(errorMsg) + "</div>");
             sendResponse(exchange, 200, "text/html", html);
         }
@@ -718,6 +766,7 @@ public class BusServer {
                 return;
             }
 
+            // Authentication gate: First the login page!
             User user = getSessionUser(exchange);
             if (user == null) {
                 sendRedirect(exchange, "/login?error=Please+log+in+to+view+your+bookings.");
